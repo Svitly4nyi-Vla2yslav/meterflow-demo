@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./netlify-dist",
+    "incremental": false
+  },
+  "exclude": ["node_modules", "test", "dist", "netlify-dist", "**/*.spec.ts", "prisma"]
+}

@@ -1,7 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 @Injectable()
 export class DocumentStorageService {
@@ -14,8 +14,9 @@ export class DocumentStorageService {
       await getStore('meterflow-documents').set(key, arrayBuffer, { metadata });
       return;
     }
-    await mkdir(this.directory, { recursive: true });
-    await writeFile(join(this.directory, key), data);
+    const filePath = join(this.directory, key);
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, data);
   }
 
   async get(key: string) {

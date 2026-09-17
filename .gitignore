@@ -111,6 +111,9 @@ dist
 .serverless/
 .netlify/
 .local-storage/
+backend/generated/prisma/
+backend/src/generated/prisma/
+backend/netlify-dist/
 
 # FuseBox cache
 .fusebox/

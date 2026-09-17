@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from './tasks.service';
 

@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "nest build",
+    "build:netlify": "tsc -p tsconfig.netlify.json",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "test": "jest --runInBand",
