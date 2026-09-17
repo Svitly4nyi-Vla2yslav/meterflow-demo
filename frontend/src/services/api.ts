@@ -1,7 +1,9 @@
 import type { AuthResponse, DocumentRecord, LoginInput, Project, ProjectInput, ProjectStatus, ProjectTask, RegisterInput, SearchResults, TaskInput, TaskStatus, User } from '../types';
 import { clearAccessToken, getAccessToken, notifyUnauthorized } from './auth-token';
 
-const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+const API_URL = import.meta.env.DEV
+  ? 'http://localhost:3000/api'
+  : '/api';
 
 interface ApiErrorBody { message?: string | string[] }
 
