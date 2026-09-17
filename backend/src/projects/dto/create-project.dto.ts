@@ -1,4 +1,4 @@
-import { ProjectStatus } from '../../../generated/prisma';
+import { ProjectStatus } from '@prisma/client';
 import { IsEnum, IsInt, IsNotEmpty, IsPositive, IsString } from 'class-validator';
 
 export class CreateProjectDto {
