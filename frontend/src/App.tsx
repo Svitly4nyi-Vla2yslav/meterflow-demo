@@ -1,11 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute, PublicOnlyRoute } from './auth/RouteGuards';
 import { AppLayout } from './components/AppLayout';
 import { ToastProvider } from './components/Toast';
 import { DashboardPage } from './pages/DashboardPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { DocumentsPage } from './pages/DocumentsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectCreatePage } from './pages/ProjectCreatePage';
@@ -14,7 +13,11 @@ import { ProjectEditPage } from './pages/ProjectEditPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { TasksPage } from './pages/TasksPage';
-import { TechStackPage } from './pages/TechStackPage';
+import { LoadingState } from './components/AsyncState';
+
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then((module) => ({ default: module.DocumentsPage })));
+const TechStackPage = lazy(() => import('./pages/TechStackPage').then((module) => ({ default: module.TechStackPage })));
 
 export default function App() {
   return <ToastProvider><AuthProvider><Routes>
@@ -28,9 +31,9 @@ export default function App() {
       <Route path="/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
       <Route path="/tasks" element={<TasksPage />} />
-      <Route path="/documents" element={<DocumentsPage />} />
-      <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/tech-stack" element={<TechStackPage />} />
+      <Route path="/documents" element={<Suspense fallback={<LoadingState label="Dokumente werden geladen …" />}><DocumentsPage /></Suspense>} />
+      <Route path="/analytics" element={<Suspense fallback={<LoadingState label="Analytics werden geladen …" />}><AnalyticsPage /></Suspense>} />
+      <Route path="/tech-stack" element={<Suspense fallback={<LoadingState label="Technologien werden geladen …" />}><TechStackPage /></Suspense>} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Route>

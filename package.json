@@ -1,0 +1,11 @@
+{
+  "name": "meterflow-demo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm ci --prefix backend && npm ci --prefix frontend && npm run prisma:generate --prefix backend && npm run build --prefix backend && npm run build --prefix frontend",
+    "dev": "npm run dev --prefix frontend",
+    "test": "npm test --prefix backend"
+  },
+  "engines": { "node": ">=20.19.0" }
+}

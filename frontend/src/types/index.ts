@@ -62,3 +62,23 @@ export interface User {
 export interface AuthResponse { accessToken: string; user: User }
 export interface LoginInput { email: string; password: string }
 export interface RegisterInput extends LoginInput { firstName: string; lastName: string }
+
+export interface DocumentRecord {
+  id: string;
+  name: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  projectId: string;
+  uploadedById: string;
+  project: Pick<Project, 'id' | 'name'>;
+  uploadedBy: Pick<User, 'id' | 'firstName' | 'lastName'>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SearchResults {
+  projects: Project[];
+  tasks: ProjectTask[];
+  documents: DocumentRecord[];
+}

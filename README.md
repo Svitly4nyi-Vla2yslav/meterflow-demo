@@ -13,13 +13,17 @@ The application demonstrates an end-to-end TypeScript workflow for renewable-ene
 - Create and edit projects with validated forms and persisted feedback
 - Project detail view with a nine-stage progress tracker and status updates
 - Create tasks, update task status, and filter the cross-project task list
-- Documents navigation with a polished Phase 2 placeholder
+- Full document management with search/filtering, upload progress, preview, download, and guarded deletion
+- Signature-based validation for PDF, PNG, JPEG, DOC, DOCX, XLS, and XLSX files up to 5 MB
+- Local filesystem storage in development and Netlify Blobs in production
 - Local email/password authentication with bcrypt and JWT
 - Protected application and API routes, user profile, and logout
-- Live portfolio analytics with lightweight CSS-based visualizations
-- In-app architecture and technology overview for portfolio review
+- Live portfolio analytics based on real project creation timestamps and cumulative PV capacity
+- Global `Ctrl/Cmd + K` search across projects, tasks, and documents
+- Derived due-date and recent-document notifications with local read state
+- In-app architecture and technology overview with official Simple Icons brand marks
 - Explicit loading, empty, and API error states
-- Validated REST endpoints for projects and tasks
+- Validated, JWT-protected REST endpoints for projects, tasks, documents, and search
 - PostgreSQL persistence through Prisma ORM
 - Repeatable development seed data
 - Backend unit tests and a health endpoint
@@ -27,21 +31,22 @@ The application demonstrates an end-to-end TypeScript workflow for renewable-ene
 ## Architecture
 
 ```text
-React + TypeScript
-        ↓
-NestJS REST API
-        ↓
-PostgreSQL
+React + TypeScript (Netlify static site)
+        ↓ /api/*
+Netlify Function → Express adapter → NestJS REST API
+        ↓                              ↓
+PostgreSQL via Prisma             Netlify Blobs
 ```
 
-The repository is split into two independent npm applications. The React client communicates with the NestJS API over HTTP; NestJS owns authentication, validation, and business access, and Prisma maps the API to PostgreSQL. Protected requests use a JWT bearer token stored in local storage for this demonstration project.
+The repository contains separate frontend and backend applications plus a root Netlify build. The production client uses same-origin `/api`; Netlify rewrites that path to one cached NestJS function. Prisma stores queryable metadata in PostgreSQL while document binaries live in Netlify Blobs. In normal local backend development, documents use `.local-storage/documents` instead.
 
 ## Technology stack
 
 - Frontend: React, TypeScript, Vite, React Router, Lucide React, plain CSS
 - Backend: NestJS, TypeScript, REST, class-validator
 - Data: PostgreSQL 16, Prisma ORM
-- Infrastructure: Docker Compose for PostgreSQL only
+- File storage: Netlify Blobs in production, filesystem adapter locally
+- Infrastructure: Docker Compose for local PostgreSQL, Netlify Functions for production API
 - Testing: Jest
 - Runtime: Node.js 20.19+ and npm
 
@@ -49,6 +54,7 @@ The repository is split into two independent npm applications. The React client 
 
 ```text
 meterflow-demo/
+├── netlify/functions/      # Serverless NestJS entry point
 ├── frontend/              # React/Vite application
 │   └── src/
 │       ├── components/
@@ -59,9 +65,13 @@ meterflow-demo/
 │   ├── prisma/            # Schema, migration, and seed
 │   └── src/
 │       ├── health/
+│       ├── documents/
 │       ├── prisma/
 │       ├── projects/
+│       ├── search/
 │       └── tasks/
+├── netlify.toml           # Build, functions, and rewrite configuration
+├── package.json           # Root production build orchestration
 ├── docker-compose.yml     # PostgreSQL development service
 └── .env.example
 ```
@@ -104,6 +114,8 @@ npm run start:dev
 ```
 
 The API is available at `http://localhost:3000/api`. Verify it with `http://localhost:3000/api/health`.
+
+Uploaded development files are written to `backend/.local-storage/documents` and are intentionally ignored by Git.
 
 For schema development, create a new migration with:
 
@@ -161,6 +173,48 @@ npm run prisma:seed     # upsert demonstration records
 | REST API | `http://localhost:3000/api` |
 | Health check | `http://localhost:3000/api/health` |
 | PostgreSQL | `localhost:5432` |
+
+## Document API
+
+All routes require a valid JWT bearer token.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/documents` | List documents with project/uploader metadata |
+| `GET` | `/api/projects/:projectId/documents` | List one project's documents |
+| `POST` | `/api/documents` | Multipart upload using fields `file`, `projectId`, optional `name` |
+| `GET` | `/api/documents/:id/download` | Stream the stored binary |
+| `DELETE` | `/api/documents/:id` | Delete binary and metadata |
+
+The backend validates the filename extension and binary signature rather than trusting the browser-provided MIME type.
+
+## Netlify deployment
+
+Create one Netlify site from the repository root. The committed `netlify.toml` builds both applications, publishes `frontend/dist`, and bundles `netlify/functions/api.ts`. Configure these environment variables in Netlify:
+
+```text
+DATABASE_URL=postgresql://...production-postgres...
+JWT_SECRET=use-a-long-random-production-secret
+NODE_ENV=production
+```
+
+Before the first production start, apply the committed Prisma migrations against the production database:
+
+```bash
+cd backend
+npm ci
+npm run prisma:deploy
+```
+
+The Netlify build runs `prisma generate` automatically. API rewrites are declared before the SPA fallback, so `/api/*` reaches the function while application routes return `index.html`.
+
+For a local production-shaped smoke test, install or invoke Netlify CLI and run from the repository root:
+
+```bash
+npx netlify-cli dev --offline
+```
+
+Then open `http://localhost:8888` and verify `/api/health`. A reachable PostgreSQL `DATABASE_URL` is still required for authenticated data routes.
 
 ## Development note
 

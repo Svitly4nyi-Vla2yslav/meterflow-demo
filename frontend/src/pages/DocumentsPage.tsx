@@ -1,5 +1,56 @@
-import { FileText } from 'lucide-react';
+import { Download, Eye, File, FileImage, FileSpreadsheet, FileText, Search, Trash2, UploadCloud, X } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { EmptyState, ErrorState, LoadingState } from '../components/AsyncState';
+import { Modal } from '../components/Modal';
+import { useToast } from '../components/Toast';
+import { useApiData } from '../hooks';
+import { api } from '../services/api';
+import type { DocumentRecord, Project } from '../types';
+
+const accepted = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx';
+const date = (value: string) => new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
+const size = (bytes: number) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+const type = (document: Pick<DocumentRecord, 'mimeType' | 'originalName'>) => document.mimeType.includes('pdf') ? 'PDF' : document.mimeType.includes('image') ? 'Bild' : /\.docx?$/i.test(document.originalName) ? 'Word' : 'Excel';
+const canPreview = (document: DocumentRecord) => document.mimeType === 'application/pdf' || document.mimeType.startsWith('image/');
+
+function TypeIcon({ document }: { document: DocumentRecord }) {
+  const Icon = document.mimeType.startsWith('image/') ? FileImage : /sheet|excel/.test(document.mimeType) ? FileSpreadsheet : document.mimeType.includes('pdf') || /word/.test(document.mimeType) ? FileText : File;
+  return <span className={`document-icon document-icon--${type(document).toLowerCase()}`}><Icon /></span>;
+}
+
+function UploadDialog({ projects, initialProjectId, onClose, onUploaded }: { projects: Project[]; initialProjectId: string; onClose: () => void; onUploaded: () => Promise<unknown> }) {
+  const { showToast } = useToast(); const inputRef = useRef<HTMLInputElement>(null);
+  const [projectId, setProjectId] = useState(initialProjectId || projects[0]?.id || ''); const [name, setName] = useState('');
+  const [file, setFile] = useState<File | null>(null); const [dragging, setDragging] = useState(false); const [progress, setProgress] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
+  const chooseFile = (next?: File) => { setError(null); if (!next) return; if (next.size > 5 * 1024 * 1024) { setError('Die Datei darf maximal 5 MB groß sein.'); return; } setFile(next); if (!name) setName(next.name.replace(/\.[^.]+$/, '')); };
+  const drop = (event: DragEvent) => { event.preventDefault(); setDragging(false); chooseFile(event.dataTransfer.files[0]); };
+  const submit = async (event: FormEvent) => { event.preventDefault(); if (!file || !projectId) { setError('Bitte Projekt und Datei auswählen.'); return; } setSaving(true); setError(null); const data = new FormData(); data.append('file', file); data.append('projectId', projectId); if (name.trim()) data.append('name', name.trim()); try { await api.uploadDocument(data, setProgress); await onUploaded(); showToast('Dokument wurde hochgeladen.'); onClose(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Upload fehlgeschlagen.'); } finally { setSaving(false); } };
+  return <Modal title="Dokument hochladen" description="Projektdateien sicher in der zentralen Ablage speichern." onClose={onClose}><form className="modal-form upload-form" onSubmit={submit}>
+    <label>Projekt<select value={projectId} onChange={(event) => setProjectId(event.target.value)} required><option value="">Projekt auswählen</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+    <div><span className="field-label">Datei</span><button type="button" className={`dropzone ${dragging ? 'dropzone--active' : ''}`} onClick={() => inputRef.current?.click()} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}><UploadCloud /><strong>{file ? file.name : 'Datei hier ablegen oder auswählen'}</strong><span>{file ? `${type({ mimeType: file.type, originalName: file.name })} · ${size(file.size)}` : 'PDF, PNG, JPEG, DOC, DOCX, XLS oder XLSX · max. 5 MB'}</span></button><input ref={inputRef} className="visually-hidden" type="file" accept={accepted} onChange={(event) => chooseFile(event.target.files?.[0])} /></div>
+    {file && <label>Dokumentname<input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} required /></label>}
+    {saving && <div className="upload-progress" aria-label={`Upload ${progress} Prozent`}><span style={{ width: `${progress}%` }} /><small>{progress < 100 ? `${progress}% übertragen` : 'Dokument wird verarbeitet …'}</small></div>}
+    {error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="button button--secondary" onClick={onClose}>Abbrechen</button><button className="button button--primary" disabled={saving || !file || !projectId}><UploadCloud /> {saving ? 'Wird hochgeladen …' : 'Hochladen'}</button></div>
+  </form></Modal>;
+}
 
 export function DocumentsPage() {
-  return <div className="page-stack"><section className="page-intro"><div><p className="eyebrow">Projektablage</p><h2>Dokumente</h2><p>Technische Unterlagen und Vertragsdokumente zentral verwalten.</p></div></section><section className="empty-feature"><span><FileText /></span><h3>Noch keine Dokumente</h3><p>Die Dokumentenverwaltung wird in einer späteren Phase ergänzt.</p></section></div>;
+  const [params, setParams] = useSearchParams(); const { showToast } = useToast();
+  const initialProject = params.get('project') ?? ''; const shouldUpload = params.get('upload') === '1';
+  const loader = useCallback(async () => { const [documents, projects] = await Promise.all([api.getDocuments(), api.getProjects()]); return { documents, projects }; }, []);
+  const result = useApiData(loader, [loader]); const [query, setQuery] = useState(''); const [projectFilter, setProjectFilter] = useState(initialProject); const [typeFilter, setTypeFilter] = useState(''); const [uploadOpen, setUploadOpen] = useState(shouldUpload); const [deleting, setDeleting] = useState<DocumentRecord | null>(null); const [busyId, setBusyId] = useState<string | null>(null);
+  const documents = useMemo(() => (result.data?.documents ?? []).filter((document) => (!query || `${document.name} ${document.originalName} ${document.project.name}`.toLowerCase().includes(query.toLowerCase())) && (!projectFilter || document.projectId === projectFilter) && (!typeFilter || type(document) === typeFilter)), [result.data, query, projectFilter, typeFilter]);
+  const closeUpload = () => { setUploadOpen(false); params.delete('upload'); setParams(params, { replace: true }); };
+  const download = async (document: DocumentRecord, preview = false) => { setBusyId(document.id); try { const blob = await api.downloadDocument(document.id); const url = URL.createObjectURL(blob); if (preview && canPreview(document)) window.open(url, '_blank', 'noopener,noreferrer'); else { const link = window.document.createElement('a'); link.href = url; link.download = document.originalName; link.click(); } window.setTimeout(() => URL.revokeObjectURL(url), 60_000); } catch (reason) { showToast(reason instanceof Error ? reason.message : 'Download fehlgeschlagen.', 'error'); } finally { setBusyId(null); } };
+  const remove = async () => { if (!deleting) return; setBusyId(deleting.id); try { await api.deleteDocument(deleting.id); await result.retry(); showToast('Dokument wurde gelöscht.'); setDeleting(null); } catch (reason) { showToast(reason instanceof Error ? reason.message : 'Dokument konnte nicht gelöscht werden.', 'error'); } finally { setBusyId(null); } };
+  if (result.loading) return <LoadingState label="Dokumente werden geladen …" />;
+  if (result.error || !result.data) return <ErrorState message={result.error ?? 'Dokumente konnten nicht geladen werden.'} onRetry={result.retry} />;
+  return <div className="page-stack"><section className="page-intro"><div><p className="eyebrow">Projektablage</p><h2>Dokumente</h2><p>Technische Unterlagen und Vertragsdokumente zentral verwalten.</p></div><button className="button button--primary" onClick={() => setUploadOpen(true)}><UploadCloud /> Dokument hochladen</button></section>
+    <section className="panel document-panel"><div className="document-toolbar"><label className="search-field"><Search /><span className="visually-hidden">Dokumente durchsuchen</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, Datei oder Projekt suchen" /></label><select aria-label="Nach Projekt filtern" value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}><option value="">Alle Projekte</option>{result.data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select><select aria-label="Nach Dokumenttyp filtern" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="">Alle Typen</option>{['PDF', 'Bild', 'Word', 'Excel'].map((value) => <option key={value}>{value}</option>)}</select>{(query || projectFilter || typeFilter) && <button className="button button--ghost" onClick={() => { setQuery(''); setProjectFilter(''); setTypeFilter(''); }}><X /> Filter löschen</button>}</div>
+      {documents.length ? <div className="document-list" role="list">{documents.map((document) => <article className="document-row" key={document.id} role="listitem"><TypeIcon document={document} /><div className="document-row__name"><strong>{document.name}</strong><span>{document.originalName}</span></div><div><small>Projekt</small><strong>{document.project.name}</strong></div><div><small>Typ / Größe</small><strong>{type(document)} · {size(document.size)}</strong></div><div><small>Hochgeladen</small><strong>{date(document.createdAt)}</strong><span>{document.uploadedBy.firstName} {document.uploadedBy.lastName}</span></div><div className="document-actions"><button className="icon-button" title={canPreview(document) ? 'Vorschau öffnen' : 'Für diesen Dateityp nicht verfügbar'} aria-label={`${document.name} ansehen`} disabled={!canPreview(document) || busyId === document.id} onClick={() => download(document, true)}><Eye /></button><button className="icon-button" title="Herunterladen" aria-label={`${document.name} herunterladen`} disabled={busyId === document.id} onClick={() => download(document)}><Download /></button><button className="icon-button icon-button--danger" title="Löschen" aria-label={`${document.name} löschen`} disabled={busyId === document.id} onClick={() => setDeleting(document)}><Trash2 /></button></div></article>)}</div> : <EmptyState message="Keine Dokumente entsprechen der aktuellen Auswahl." />}
+    </section>
+    {uploadOpen && <UploadDialog projects={result.data.projects} initialProjectId={projectFilter || initialProject} onClose={closeUpload} onUploaded={result.retry} />}
+    {deleting && <Modal title="Dokument löschen?" description={`${deleting.name} wird dauerhaft aus Ablage und Dateispeicher entfernt.`} onClose={() => setDeleting(null)}><div className="modal-actions modal-actions--standalone"><button className="button button--secondary" onClick={() => setDeleting(null)}>Abbrechen</button><button className="button button--danger" disabled={busyId === deleting.id} onClick={remove}><Trash2 /> {busyId === deleting.id ? 'Wird gelöscht …' : 'Dauerhaft löschen'}</button></div></Modal>}
+  </div>;
 }

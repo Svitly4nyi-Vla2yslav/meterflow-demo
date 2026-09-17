@@ -39,6 +39,7 @@ model User {
   role         UserRole @default(DEVELOPER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  documents    Document[]
 }
 
 model Project {
@@ -50,10 +51,30 @@ model Project {
   pvPower   Int
   status    ProjectStatus
   tasks     Task[]
+  documents Document[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
   @@index([status])
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  name         String
+  originalName String
+  mimeType     String
+  size         Int
+  storageKey   String   @unique
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([uploadedById])
+  @@index([createdAt])
 }
 
 model Task {
