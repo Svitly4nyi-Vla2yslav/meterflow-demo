@@ -1,4 +1,5 @@
 import { PrismaClient, ProjectStatus, TaskStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,12 @@ const tasks = [
 ];
 
 async function main() {
+  const passwordHash = await bcrypt.hash('MeterFlow2026!', 12);
+  await prisma.user.upsert({
+    where: { email: 'demo@meterflow.local' },
+    update: { firstName: 'Vladyslav', lastName: 'Svitlychnyi', passwordHash, role: 'DEVELOPER' },
+    create: { firstName: 'Vladyslav', lastName: 'Svitlychnyi', email: 'demo@meterflow.local', passwordHash, role: 'DEVELOPER' },
+  });
   for (const project of projects) await prisma.project.upsert({ where: { id: project.id }, update: project, create: project });
   for (const task of tasks) await prisma.task.upsert({ where: { id: task.id }, update: { ...task, projectId: 'sonnenhof' }, create: { ...task, projectId: 'sonnenhof' } });
 }

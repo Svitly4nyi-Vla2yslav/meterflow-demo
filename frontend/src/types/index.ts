@@ -46,3 +46,19 @@ export interface TaskInput {
   dueDate: string;
   status?: TaskStatus;
 }
+
+export type UserRole = 'DEVELOPER' | 'ADMIN';
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthResponse { accessToken: string; user: User }
+export interface LoginInput { email: string; password: string }
+export interface RegisterInput extends LoginInput { firstName: string; lastName: string }

@@ -14,6 +14,10 @@ The application demonstrates an end-to-end TypeScript workflow for renewable-ene
 - Project detail view with a nine-stage progress tracker and status updates
 - Create tasks, update task status, and filter the cross-project task list
 - Documents navigation with a polished Phase 2 placeholder
+- Local email/password authentication with bcrypt and JWT
+- Protected application and API routes, user profile, and logout
+- Live portfolio analytics with lightweight CSS-based visualizations
+- In-app architecture and technology overview for portfolio review
 - Explicit loading, empty, and API error states
 - Validated REST endpoints for projects and tasks
 - PostgreSQL persistence through Prisma ORM
@@ -30,7 +34,7 @@ NestJS REST API
 PostgreSQL
 ```
 
-The repository is split into two independent npm applications. The React client communicates with the NestJS API over HTTP; NestJS owns validation and business access, and Prisma maps the API to PostgreSQL.
+The repository is split into two independent npm applications. The React client communicates with the NestJS API over HTTP; NestJS owns authentication, validation, and business access, and Prisma maps the API to PostgreSQL. Protected requests use a JWT bearer token stored in local storage for this demonstration project.
 
 ## Technology stack
 
@@ -80,6 +84,8 @@ Copy-Item .env.example backend/.env
 
 The included credentials are development-only. Use secret management and unique credentials outside local development.
 
+Set `JWT_SECRET` to a long, random value outside local development. Never reuse the example value in production.
+
 ### 2. Start PostgreSQL
 
 ```bash
@@ -116,6 +122,15 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The client uses `http://localhost:3000/api` by default. To override it, set `VITE_API_URL` in `frontend/.env`.
+
+### Demo account (local development only)
+
+```text
+E-Mail:  demo@meterflow.local
+Passwort: MeterFlow2026!
+```
+
+The seed stores only a bcrypt password hash in PostgreSQL. These credentials are strictly for the local demo environment.
 
 ## Useful commands
 
