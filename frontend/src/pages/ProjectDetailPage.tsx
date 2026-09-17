@@ -1,50 +1,48 @@
-import { ArrowLeft, Building2, CalendarDays, Check, MapPin, SunMedium, Users } from 'lucide-react';
-import { useCallback } from 'react';
+import { ArrowLeft, Building2, CalendarDays, Check, Clock3, MapPin, Pencil, Plus, RefreshCw, SunMedium, Users } from 'lucide-react';
+import { useCallback, useState, type FormEvent, type ReactNode, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '../components/AsyncState';
-import { ProjectStatusBadge, TaskStatusBadge, projectStatusLabels } from '../components/StatusBadge';
+import { Modal } from '../components/Modal';
+import { ProjectStatusBadge } from '../components/StatusBadge';
+import { useToast } from '../components/Toast';
+import { getProgress, workflowStages } from '../constants';
 import { useApiData } from '../hooks';
 import { api } from '../services/api';
-import type { ProjectStatus } from '../types';
+import type { ProjectStatus, TaskStatus } from '../types';
 
-const stages: { status: ProjectStatus; label: string }[] = [
-  { status: 'INQUIRY', label: 'Anfrage' }, { status: 'ECONOMIC_CHECK', label: 'Wirtschaftlichkeitsprüfung' },
-  { status: 'CONTRACT', label: 'Vertrag' }, { status: 'METERING_CONCEPT', label: 'Messkonzept' },
-  { status: 'GRID_REGISTRATION', label: 'Anmeldung Netzbetreiber' }, { status: 'INSTALLATION', label: 'Installation' },
-  { status: 'COMMISSIONING', label: 'Inbetriebnahme' }, { status: 'BILLING', label: 'Abrechnung' },
-];
-
-function formatDate(date: string) { return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date)); }
+const taskStatuses: { value: TaskStatus; label: string }[] = [{ value: 'OPEN', label: 'Offen' }, { value: 'IN_PROGRESS', label: 'In Arbeit' }, { value: 'DONE', label: 'Erledigt' }];
+const formatDate = (date: string) => new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date));
 
 export function ProjectDetailPage() {
-  const { id = '' } = useParams();
-  const projectLoader = useCallback(() => api.getProject(id), [id]);
-  const tasksLoader = useCallback(() => api.getProjectTasks(id), [id]);
-  const project = useApiData(projectLoader, [projectLoader]);
-  const tasks = useApiData(tasksLoader, [tasksLoader]);
+  const { id = '' } = useParams(); const { showToast } = useToast();
+  const [statusOpen, setStatusOpen] = useState(false); const [taskOpen, setTaskOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>('INQUIRY'); const [saving, setSaving] = useState(false); const [modalError, setModalError] = useState<string | null>(null);
+  const projectLoader = useCallback(() => api.getProject(id), [id]); const tasksLoader = useCallback(() => api.getProjectTasks(id), [id]);
+  const project = useApiData(projectLoader, [projectLoader]); const tasks = useApiData(tasksLoader, [tasksLoader]);
 
   if (project.loading) return <LoadingState label="Projekt wird geladen …" />;
-  if (project.error) return <ErrorState message={project.error} onRetry={project.retry} />;
-  if (!project.data) return <EmptyState message="Projekt nicht gefunden." />;
+  if (project.error || !project.data) return <ErrorState message={project.error ?? 'Projekt nicht gefunden.'} onRetry={project.retry} />;
+  const currentIndex = workflowStages.findIndex((stage) => stage.status === project.data?.status); const progress = getProgress(project.data.status);
+  const openStatus = () => { setSelectedStatus(project.data!.status); setModalError(null); setStatusOpen(true); };
+  const saveStatus = async () => { setSaving(true); setModalError(null); try { await api.updateProject(id, { status: selectedStatus }); await project.retry(); setStatusOpen(false); showToast('Status wurde geändert.'); } catch (reason) { setModalError(reason instanceof Error ? reason.message : 'Status konnte nicht geändert werden.'); } finally { setSaving(false); } };
+  const changeTaskStatus = async (taskId: string, status: TaskStatus) => { try { await api.updateTaskStatus(taskId, status); await tasks.retry(); showToast('Aufgabenstatus wurde geändert.'); } catch (reason) { showToast(reason instanceof Error ? reason.message : 'Aufgabe konnte nicht aktualisiert werden.', 'error'); } };
 
-  const currentIndex = project.data.status === 'COMPLETED' ? stages.length : stages.findIndex((stage) => stage.status === project.data?.status);
-  const completedCount = Math.max(0, currentIndex);
-  const progress = project.data.status === 'COMPLETED' ? 100 : Math.round(((currentIndex + 1) / stages.length) * 100);
-
-  return <div className="page-stack">
-    <Link className="back-link" to="/projects"><ArrowLeft size={17} /> Zurück zu Projekte</Link>
-    <section className="detail-hero"><div><p className="eyebrow">Projekt</p><div className="detail-hero__title"><h2>{project.data.name}</h2><ProjectStatusBadge status={project.data.status} /></div><p><MapPin size={16} /> {project.data.address}</p></div><div className="progress-ring" style={{ '--progress': `${progress * 3.6}deg` } as React.CSSProperties}><div><strong>{progress}%</strong><span>Fortschritt</span></div></div></section>
-    <section className="detail-grid">
-      <article className="info-card"><span><MapPin /></span><div><small>Adresse</small><strong>{project.data.address}</strong></div></article>
-      <article className="info-card"><span><Users /></span><div><small>Wohneinheiten</small><strong>{project.data.units} Einheiten</strong></div></article>
-      <article className="info-card"><span><SunMedium /></span><div><small>PV-Leistung</small><strong>{project.data.pvPower} kWp</strong></div></article>
-      <article className="info-card"><span><Building2 /></span><div><small>Aktueller Status</small><strong>{projectStatusLabels[project.data.status]}</strong></div></article>
+  return <div className="page-stack"><Link className="back-link" to="/projects"><ArrowLeft /> Zurück zu Projekte</Link>
+    <section className="detail-hero"><div><p className="eyebrow">Projektübersicht</p><div className="detail-hero__title"><h2>{project.data.name}</h2><ProjectStatusBadge status={project.data.status} /></div><p><MapPin /> {project.data.address}</p><div className="hero-actions"><Link className="button button--light" to={`/projects/${id}/edit`}><Pencil /> Projekt bearbeiten</Link><button className="button button--outline-light" onClick={openStatus}><RefreshCw /> Status aktualisieren</button></div></div><div className="progress-ring" style={{ '--progress': `${progress * 3.6}deg` } as CSSProperties}><div><strong>{progress}%</strong><span>Fortschritt</span></div></div></section>
+    <section className="detail-grid detail-grid--five"><Info icon={<MapPin />} label="Adresse" value={project.data.address} /><Info icon={<Building2 />} label="Ort" value={project.data.city} /><Info icon={<Users />} label="Wohneinheiten" value={`${project.data.units} Einheiten`} /><Info icon={<SunMedium />} label="PV-Leistung" value={`${project.data.pvPower} kWp`} /><Info icon={<Clock3 />} label="Erstellt am" value={formatDate(project.data.createdAt)} /></section>
+    <section className="panel workflow-panel"><div className="panel__header"><div><h3>Projektfortschritt</h3><p>Von der Anfrage bis zum abgeschlossenen Projekt</p></div><strong className="progress-text">{progress}% abgeschlossen</strong></div><div className="workflow-list">{workflowStages.map((stage, index) => { const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'future'; return <div className={`workflow-step workflow-step--${state}`} key={stage.status}><div className="workflow-step__rail"><span>{state === 'complete' ? <Check /> : state === 'current' ? <span className="current-dot" /> : index + 1}</span></div><div><small>Schritt {index + 1}</small><strong>{stage.label}</strong>{state === 'current' && <em>Aktueller Schritt</em>}</div></div>; })}</div></section>
+    <section className="panel"><div className="panel__header"><div><h3>Aufgaben</h3><p>Nächste Schritte und anstehende Termine</p></div><button className="button button--secondary-green" onClick={() => { setModalError(null); setTaskOpen(true); }}><Plus /> Aufgabe hinzufügen</button></div>
+      {tasks.loading ? <LoadingState label="Aufgaben werden geladen …" /> : tasks.error ? <ErrorState message={tasks.error} onRetry={tasks.retry} /> : !tasks.data?.length ? <EmptyState message="Für dieses Projekt sind keine Aufgaben vorhanden." /> : <div className="task-list">{tasks.data.map((task) => <article className={`task-row ${task.status === 'DONE' ? 'task-row--done' : ''}`} key={task.id}><span className={`task-check task-check--${task.status.toLowerCase()}`}>{task.status === 'DONE' && <Check />}</span><div className="task-row__title"><strong>{task.title}</strong><span><CalendarDays /> Fällig am {formatDate(task.dueDate)}</span></div><select className={`status-select status-select--${task.status.toLowerCase()}`} aria-label={`Status für ${task.title}`} value={task.status} onChange={(event) => void changeTaskStatus(task.id, event.target.value as TaskStatus)}>{taskStatuses.map((status) => <option value={status.value} key={status.value}>{status.label}</option>)}</select></article>)}</div>}
     </section>
-    <section className="panel"><div className="panel__header"><div><h3>Projektfortschritt</h3><p>Von der Anfrage bis zur laufenden Abrechnung</p></div><strong className="progress-text">{completedCount} von 8 Phasen abgeschlossen</strong></div>
-      <div className="timeline">{stages.map((stage, index) => { const state = index < currentIndex || project.data?.status === 'COMPLETED' ? 'complete' : index === currentIndex ? 'current' : 'future'; return <div className={`timeline__step timeline__step--${state}`} key={stage.status}><span className="timeline__marker">{state === 'complete' ? <Check size={15} /> : index + 1}</span><span>{stage.label}</span></div>; })}</div>
-    </section>
-    <section className="panel"><div className="panel__header"><div><h3>Nächste Aufgaben</h3><p>Offene Schritte und anstehende Termine</p></div></div>
-      {tasks.loading ? <LoadingState label="Aufgaben werden geladen …" /> : tasks.error ? <ErrorState message={tasks.error} onRetry={tasks.retry} /> : !tasks.data?.length ? <EmptyState message="Für dieses Projekt sind keine Aufgaben vorhanden." /> : <div className="task-list">{tasks.data.map((task) => <article className="task-row" key={task.id}><span className={`task-check task-check--${task.status.toLowerCase()}`}>{task.status === 'DONE' && <Check size={15} />}</span><div className="task-row__title"><strong>{task.title}</strong><span><CalendarDays size={14} /> Fällig am {formatDate(task.dueDate)}</span></div><TaskStatusBadge status={task.status} /></article>)}</div>}
-    </section>
+    {statusOpen && <Modal title="Projektstatus aktualisieren" description="Wähle den aktuellen Schritt im Projektworkflow." onClose={() => setStatusOpen(false)}><div className="modal-body">{modalError && <div className="form-error">{modalError}</div>}<label className="form-field"><span>Neuer Status</span><select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as ProjectStatus)}>{workflowStages.map((stage) => <option value={stage.status} key={stage.status}>{stage.label}</option>)}</select></label></div><div className="modal-actions"><button className="button button--ghost" onClick={() => setStatusOpen(false)}>Abbrechen</button><button className="button" disabled={saving || selectedStatus === project.data.status} onClick={() => void saveStatus()}>{saving ? 'Wird gespeichert …' : 'Status speichern'}</button></div></Modal>}
+    {taskOpen && <TaskCreateModal projectId={id} onClose={() => setTaskOpen(false)} onCreated={async () => { await tasks.retry(); setTaskOpen(false); showToast('Aufgabe hinzugefügt.'); }} />}
   </div>;
+}
+
+function Info({ icon, label, value }: { icon: ReactNode; label: string; value: string }) { return <article className="info-card"><span>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></article>; }
+
+function TaskCreateModal({ projectId, onClose, onCreated }: { projectId: string; onClose: () => void; onCreated: () => Promise<void> }) {
+  const [title, setTitle] = useState(''); const [dueDate, setDueDate] = useState(''); const [error, setError] = useState<string | null>(null); const [saving, setSaving] = useState(false);
+  const submit = async (event: FormEvent) => { event.preventDefault(); setError(null); if (!title.trim() || !dueDate) return setError('Titel und Fälligkeitsdatum sind erforderlich.'); setSaving(true); try { await api.createTask(projectId, { title: title.trim(), dueDate: new Date(`${dueDate}T12:00:00`).toISOString() }); await onCreated(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Aufgabe konnte nicht erstellt werden.'); } finally { setSaving(false); } };
+  return <Modal title="Aufgabe hinzufügen" description="Plane einen konkreten nächsten Schritt für dieses Projekt." onClose={onClose}><form onSubmit={submit}><div className="modal-body">{error && <div className="form-error">{error}</div>}<label className="form-field"><span>Aufgabentitel *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="z. B. Netzbetreiber kontaktieren" autoFocus /></label><label className="form-field"><span>Fällig am *</span><input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label></div><div className="modal-actions"><button type="button" className="button button--ghost" onClick={onClose}>Abbrechen</button><button className="button" disabled={saving}>{saving ? 'Wird gespeichert …' : 'Aufgabe hinzufügen'}</button></div></form></Modal>;
 }

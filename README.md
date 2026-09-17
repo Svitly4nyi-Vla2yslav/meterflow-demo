@@ -8,10 +8,12 @@ The application demonstrates an end-to-end TypeScript workflow for renewable-ene
 
 ## Features
 
-- Responsive EnergyTech dashboard with portfolio statistics
+- Responsive EnergyTech dashboard with live portfolio statistics
 - Project list with locations, housing units, PV capacity, and workflow status
-- Project detail view with an eight-stage progress tracker
-- Project-specific and cross-project task lists
+- Create and edit projects with validated forms and persisted feedback
+- Project detail view with a nine-stage progress tracker and status updates
+- Create tasks, update task status, and filter the cross-project task list
+- Documents navigation with a polished Phase 2 placeholder
 - Explicit loading, empty, and API error states
 - Validated REST endpoints for projects and tasks
 - PostgreSQL persistence through Prisma ORM

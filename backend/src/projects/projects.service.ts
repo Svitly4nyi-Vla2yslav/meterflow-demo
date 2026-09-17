@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -14,6 +14,7 @@ export class ProjectsService {
   }
   create(dto: CreateProjectDto) { return this.prisma.project.create({ data: dto }); }
   async update(id: string, dto: UpdateProjectDto) {
+    if (Object.keys(dto).length === 0) throw new BadRequestException('At least one project field is required');
     await this.findOne(id);
     return this.prisma.project.update({ where: { id }, data: dto });
   }

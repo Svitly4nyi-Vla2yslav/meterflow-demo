@@ -19,8 +19,17 @@ export interface Project {
   units: number;
   pvPower: number;
   status: ProjectStatus;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectInput {
+  name: string;
+  city: string;
+  address: string;
+  units: number;
+  pvPower: number;
+  status?: ProjectStatus;
 }
 
 export interface ProjectTask {
@@ -30,4 +39,10 @@ export interface ProjectTask {
   dueDate: string;
   projectId: string;
   project?: Pick<Project, 'id' | 'name'>;
+}
+
+export interface TaskInput {
+  title: string;
+  dueDate: string;
+  status?: TaskStatus;
 }
