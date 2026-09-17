@@ -1,7 +1,7 @@
 import type { AuthResponse, DocumentRecord, LoginInput, Project, ProjectInput, ProjectStatus, ProjectTask, RegisterInput, SearchResults, TaskInput, TaskStatus, User } from '../types';
 import { clearAccessToken, getAccessToken, notifyUnauthorized } from './auth-token';
 
-const API_URL = import.meta.env.DEV
+const API_URL = import.meta.env.MODE === 'development'
   ? 'http://localhost:3000/api'
   : '/api';
 
