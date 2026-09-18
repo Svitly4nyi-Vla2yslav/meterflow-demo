@@ -1,15 +1,14 @@
 [build]
   command = "npm run build"
   publish = "frontend/dist"
-  functions = "netlify/functions"
 
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@nestjs/common", "@nestjs/config", "@nestjs/core", "@nestjs/jwt", "@nestjs/mapped-types", "@nestjs/passport", "@nestjs/platform-express", "@netlify/blobs", "@prisma/client", "bcrypt", "class-transformer", "class-validator", "express", "passport", "passport-jwt", "reflect-metadata", "rxjs", "serverless-http"]
+  external_node_modules = ["@nestjs/common", "@nestjs/config", "@nestjs/core", "@nestjs/jwt", "@nestjs/mapped-types", "@nestjs/passport", "@nestjs/platform-express", "@netlify/blobs", "@prisma/adapter-pg", "@prisma/client", "bcrypt", "class-transformer", "class-validator", "express", "passport", "passport-jwt", "pg", "reflect-metadata", "rxjs", "serverless-http"]
   included_files = [
-    "node_modules/.prisma/client/**",
-    "backend/node_modules/.prisma/client/**",
-    "backend/node_modules/@prisma/client/**"
+    "generated/prisma/query_compiler_bg.wasm",
+    "generated/prisma/schema.prisma"
   ]
 
 [dev]

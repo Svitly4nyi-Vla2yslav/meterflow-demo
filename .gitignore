@@ -113,6 +113,7 @@ dist
 .local-storage/
 backend/generated/prisma/
 backend/src/generated/prisma/
+generated/prisma/
 backend/netlify-dist/
 
 # FuseBox cache

@@ -1,7 +1,10 @@
-import { PrismaClient, ProjectStatus, TaskStatus } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient, ProjectStatus, TaskStatus } from '../../generated/prisma';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 const projects = [
   { id: 'sonnenhof', name: 'Sonnenhof', city: 'Hamburg', address: 'Musterstraße 12, 20095 Hamburg', units: 18, pvPower: 32, status: ProjectStatus.METERING_CONCEPT },

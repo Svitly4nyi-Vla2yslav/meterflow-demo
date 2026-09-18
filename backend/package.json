@@ -23,6 +23,7 @@
     "@nestjs/platform-express": "^11.1.6",
     "@netlify/blobs": "^11.1.0",
     "@netlify/functions": "^6.0.0",
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "6.19.3",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -30,6 +31,7 @@
     "express": "^5.2.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "serverless-http": "^4.0.0"
