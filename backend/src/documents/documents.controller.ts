@@ -16,7 +16,7 @@ export class DocumentsController {
   @Get('projects/:projectId/documents') findByProject(@Param('projectId') projectId: string) { return this.documents.findByProject(projectId); }
 
   @Post('documents')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 4 * 1024 * 1024, files: 1 } }))
   create(@Body() dto: UploadDocumentDto, @UploadedFile() file: Express.Multer.File, @CurrentUser() user: AuthenticatedUser) {
     return this.documents.create(dto, file, user.id);
   }

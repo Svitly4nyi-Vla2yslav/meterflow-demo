@@ -1,4 +1,4 @@
-import type { Handler, HandlerResponse } from '@netlify/functions';
+import type { HandlerContext, HandlerEvent, HandlerResponse } from '@netlify/aws-lambda-compat';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
@@ -18,4 +18,7 @@ async function getHandler() {
   return cachedHandler;
 }
 
-export const netlifyHandler: Handler = async (event, context) => await (await getHandler())(event, context) as HandlerResponse;
+export const netlifyHandler = async (
+  event: HandlerEvent,
+  context: HandlerContext,
+): Promise<HandlerResponse> => await (await getHandler())(event, context) as HandlerResponse;

@@ -21,6 +21,7 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.6",
+    "@netlify/aws-lambda-compat": "^2.0.0",
     "@netlify/blobs": "^11.1.0",
     "@netlify/functions": "^6.0.0",
     "@prisma/adapter-pg": "^6.19.3",
