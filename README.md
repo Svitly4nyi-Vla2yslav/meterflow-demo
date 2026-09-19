@@ -469,13 +469,21 @@ NODE_ENV=development
 PORT=3000
 ```
 
+When `DOCUMENT_STORAGE` is unset, document bytes are stored locally in
+`.local-storage/documents`.
+
 ### Production
 
 ```text
 DATABASE_URL
 JWT_SECRET
 NODE_ENV=production
+DOCUMENT_STORAGE=netlify-blobs
 ```
+
+Set `DOCUMENT_STORAGE=netlify-blobs` in the Netlify server-side environment. It must
+not use the `VITE_` prefix or be exposed to frontend code. Netlify Blobs creates the
+`meterflow-documents` store automatically when the application first writes to it.
 
 Secrets must never use the `VITE_` prefix and must never be exposed to the browser.
 

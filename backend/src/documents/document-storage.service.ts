@@ -6,12 +6,21 @@ import { dirname, join, resolve } from 'node:path';
 @Injectable()
 export class DocumentStorageService {
   private readonly directory = resolve(process.cwd(), '.local-storage', 'documents');
-  private readonly useBlobs = process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true';
+  private readonly useBlobs = process.env.DOCUMENT_STORAGE === 'netlify-blobs';
+
+  constructor() {
+    console.info('[DocumentStorage]', {
+      driver: this.useBlobs ? 'netlify-blobs' : 'local',
+      nodeEnv: process.env.NODE_ENV,
+      documentStorageConfigured: Boolean(process.env.DOCUMENT_STORAGE),
+    });
+  }
 
   async put(key: string, data: Buffer, metadata: Record<string, string>) {
     if (this.useBlobs) {
+      const store = getStore('meterflow-documents');
       const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
-      await getStore('meterflow-documents').set(key, arrayBuffer, { metadata });
+      await store.set(key, arrayBuffer, { metadata });
       return;
     }
     const filePath = join(this.directory, key);
@@ -22,7 +31,8 @@ export class DocumentStorageService {
   async get(key: string) {
     try {
       if (this.useBlobs) {
-        const value = await getStore('meterflow-documents').get(key, { type: 'arrayBuffer' });
+        const store = getStore('meterflow-documents');
+        const value = await store.get(key, { type: 'arrayBuffer' });
         if (!value) throw new NotFoundException('Dateiinhalt wurde nicht gefunden.');
         return Buffer.from(value);
       }
@@ -35,7 +45,8 @@ export class DocumentStorageService {
 
   async remove(key: string) {
     if (this.useBlobs) {
-      await getStore('meterflow-documents').delete(key);
+      const store = getStore('meterflow-documents');
+      await store.delete(key);
       return;
     }
     await unlink(join(this.directory, key)).catch((error: NodeJS.ErrnoException) => {
