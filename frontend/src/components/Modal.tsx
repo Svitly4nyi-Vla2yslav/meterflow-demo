@@ -1,12 +1,15 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef, type PropsWithChildren } from 'react';
 
+// Modal приймає заголовок, необов’язковий опис, children і onClose; забезпечує dialog-семантику та керування клавіатурним фокусом.
 export function Modal({ title, description, onClose, children }: PropsWithChildren<{ title: string; description?: string; onClose: () => void }>) {
   const modalRef = useRef<HTMLElement>(null);
+  // Ефект запам’ятовує попередній activeElement, фокусує перший контрол, обробляє клавіатуру й повертає фокус після закриття.
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const modal = modalRef.current;
     modal?.querySelector<HTMLElement>('input, select, button, [href]')?.focus();
+    // onKeyDown закриває діалог через Escape та циклічно утримує Tab/Shift+Tab між доступними контролами.
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
       if (event.key !== 'Tab' || !modal) return;
