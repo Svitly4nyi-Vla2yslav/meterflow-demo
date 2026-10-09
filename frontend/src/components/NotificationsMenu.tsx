@@ -12,12 +12,12 @@ const storageKey = 'meterflow-read-notifications';
  * та зберігає прочитані id локально в браузері.
  */
 export function NotificationsMenu() {
-  // Пошкоджене або відсутнє значення localStorage безпечно перетворюється на порожній список.
+  // Відсутнє або синтаксично некоректне JSON-значення localStorage перетворюється на порожній список.
   const [open, setOpen] = useState(false); const [read, setRead] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(storageKey) ?? '[]') as string[]; } catch { return []; } });
-  // Завантажує обидва джерела паралельно й повертає стабільний об'єкт для useApiData.
+  // Завантажує обидва джерела паралельно й об'єднує їх у спільний об'єкт для useApiData.
   const loader = useCallback(async () => { const [tasks, documents] = await Promise.all([api.getTasks(), api.getDocuments()]); return { tasks, documents }; }, []);
   const result = useApiData(loader, [loader]);
-/**
+  /**
    * Перетворює прострочені/найближчі задачі та нові документи на спільний формат.
    * Межа «нове/скоро» становить сім днів, а результат обмежується вісьмома записами.
    */

@@ -15,7 +15,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
   const items = [...results.projects.map((item) => ({ id: `p-${item.id}`, label: item.name, meta: `${item.city} · Projekt`, to: `/projects/${item.id}`, icon: FolderKanban })), ...results.tasks.map((item) => ({ id: `t-${item.id}`, label: item.title, meta: `${item.project?.name ?? 'Projekt'} · Aufgabe`, to: `/projects/${item.projectId}`, icon: ClipboardCheck })), ...results.documents.map((item) => ({ id: `d-${item.id}`, label: item.name, meta: `${item.project.name} · Dokument`, to: `/documents?project=${item.projectId}`, icon: FileText }))];
   // Під час кожного відкриття фокусує поле та скидає попередній запит, результати й активний пункт.
   useEffect(() => { if (!open) return; inputRef.current?.focus(); setQuery(''); setResults(empty); setActive(0); }, [open]);
-  // Після debounce виконує пошук; cleanup скасовує таймер і забороняє застарілому запиту оновити стан.
+  // Після debounce запускає пошук; cleanup скасовує таймер, а локальний прапорець стримує лише error/loading після закриття.
   useEffect(() => { if (!open || query.trim().length < 2) { setResults(empty); return; } const controller = new AbortController(); const timer = window.setTimeout(async () => { setLoading(true); try { setResults(await api.search(query)); setActive(0); } catch { if (!controller.signal.aborted) setResults(empty); } finally { if (!controller.signal.aborted) setLoading(false); } }, 250); return () => { controller.abort(); window.clearTimeout(timer); }; }, [query, open]);
   if (!open) return null;
   // Переходить до вибраного ресурсу й одразу закриває палітру.
