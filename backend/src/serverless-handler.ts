@@ -20,9 +20,14 @@ export const binaryMimeTypes = [
   'application/octet-stream',
 ];
 
+/** Обгортає Express-застосунок для Netlify та позначає підтримувані документи й зображення як binary-відповіді. */
 export const createServerlessHandler = (application: Parameters<typeof serverless>[0]) =>
   serverless(application, { binary: binaryMimeTypes });
 
+/**
+ * Ліниво створює Express/Nest застосунок на першому cold start і кешує готовий handler
+ * для наступних викликів того самого serverless-контейнера. До кешування очікує повну ініціалізацію Nest.
+ */
 async function getHandler() {
   if (cachedHandler) return cachedHandler;
   const expressApp = express();
@@ -32,6 +37,7 @@ async function getHandler() {
   return cachedHandler;
 }
 
+/** Передає Netlify event/context у кешований serverless handler і повертає сумісну Lambda-відповідь. */
 export const netlifyHandler = async (
   event: HandlerEvent,
   context: HandlerContext,
