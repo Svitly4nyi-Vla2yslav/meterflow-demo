@@ -1,6 +1,10 @@
 import { Leaf, Sun } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 
+/**
+ * Формує спільний двоколонковий каркас сторінок входу й реєстрації.
+ * Приймає тексти заголовка та children форми, а статичний visual-блок не виконує запитів і не керує авторизацією.
+ */
 export function AuthShell({ eyebrow, title, subtitle, children }: PropsWithChildren<{ eyebrow: string; title: string; subtitle: string }>) {
   return <main className="auth-page"><section className="auth-form-side"><div className="auth-form-wrap"><div className="auth-brand"><span><Leaf /></span><strong>MeterFlow</strong></div><div className="auth-heading"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{subtitle}</p></div>{children}<p className="auth-footnote">Unabhängiges Portfolio- und Demonstrationsprojekt</p></div></section><section className="auth-visual" aria-label="Nachhaltige Energie für Wohngebäude"><img className="auth-visual__image" src="/images/login-energy-building.png" alt="Modernes Mehrfamilienhaus mit Photovoltaikanlage" width="1122" height="1402" decoding="async" fetchPriority="high" /><div className="auth-visual__shade" /><div className="auth-visual__copy"><span className="auth-kicker"><Sun /> Energie intelligent nutzen</span><h2>Nachhaltige Energie<br />für Mehrfamilienhäuser</h2><p>Projekte strukturiert planen, Fortschritt transparent machen und die Energiewende gemeinsam voranbringen.</p></div></section></main>;
 }
