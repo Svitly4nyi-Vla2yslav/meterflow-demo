@@ -4,12 +4,19 @@ import type { ProjectInput } from '../types';
 
 type FormValues = Omit<ProjectInput, 'units' | 'pvPower'> & { units: string; pvPower: string };
 
+/**
+ * Керує створенням або редагуванням проєкту на основі необов'язкових початкових даних.
+ * Перевіряє обов'язкові поля та цілі додатні числові значення, передає нормалізований
+ * ProjectInput в асинхронний onSubmit і показує локальний стан помилки/надсилання.
+ */
 export function ProjectForm({ initial, submitLabel, onSubmit, onCancel }: { initial?: ProjectInput; submitLabel: string; onSubmit: (data: ProjectInput) => Promise<void>; onCancel: () => void }) {
   const [values, setValues] = useState<FormValues>({ name: initial?.name ?? '', address: initial?.address ?? '', city: initial?.city ?? '', units: initial ? String(initial.units) : '', pvPower: initial ? String(initial.pvPower) : '' });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Оновлює одне поле, не змінюючи решту локальної чернетки форми.
   const setField = (field: keyof FormValues, value: string) => setValues((current) => ({ ...current, [field]: value }));
 
+  // Зупиняє нативне надсилання, валідовує й нормалізує дані та завжди скидає submitting після callback.
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault(); setError(null);
     const units = Number(values.units); const pvPower = Number(values.pvPower);
