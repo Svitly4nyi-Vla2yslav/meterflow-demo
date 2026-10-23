@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
 
+// Діагностичний запис показує режим поточної Vite-збірки без токенів або користувацьких даних.
 console.info('[MeterFlow build]', {
   mode: import.meta.env.MODE,
   dev: import.meta.env.DEV,
@@ -11,4 +12,5 @@ console.info('[MeterFlow build]', {
   build: 'build-api-relative',
 });
 
+// Монтує застосунок у StrictMode та надає BrowserRouter усім маршрутам MeterFlow.
 createRoot(document.getElementById('root')!).render(<StrictMode><BrowserRouter><App /></BrowserRouter></StrictMode>);
