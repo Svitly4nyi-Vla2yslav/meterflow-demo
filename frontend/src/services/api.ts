@@ -10,6 +10,11 @@ const API_URL = (
 
 interface ApiErrorBody { message?: string | string[] }
 
+/**
+ * Виконує JSON-запит до API, додає bearer-токен за потреби та нормалізує помилки.
+ * Відповідь 401 очищає локальну сесію і сповіщає застосунок; FormData не отримує
+ * ручний Content-Type, щоб браузер сам додав multipart boundary.
+ */
 async function request<T>(path: string, init?: RequestInit, requiresAuth = true): Promise<T> {
   let response: Response;
   try {
@@ -30,6 +35,7 @@ async function request<T>(path: string, init?: RequestInit, requiresAuth = true)
   return response.json() as Promise<T>;
 }
 
+/** Типізований фасад REST-операцій MeterFlow для сторінок і компонентів. */
 export const api = {
   register: (data: RegisterInput) => request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }, false),
   login: (data: LoginInput) => request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(data) }, false),
@@ -46,6 +52,10 @@ export const api = {
   getProjectDocuments: (id: string) => request<DocumentRecord[]>(`/projects/${id}/documents`),
   deleteDocument: (id: string) => request<{ deleted: true }>(`/documents/${id}`, { method: 'DELETE' }),
   search: (query: string) => request<SearchResults>(`/search?q=${encodeURIComponent(query)}`),
+  /**
+   * Завантажує документ через XMLHttpRequest, бо його upload-подія надає відсоток прогресу.
+   * Авторизація береться з поточної сесії; 401 запускає той самий сценарій виходу, що й `request`.
+   */
   uploadDocument: (formData: FormData, onProgress?: (value: number) => void) => new Promise<DocumentRecord>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}/documents`);
@@ -61,6 +71,7 @@ export const api = {
     };
     xhr.send(formData);
   }),
+  /** Завантажує захищений файл як Blob; керування іменем і збереженням лишається викликачеві. */
   downloadDocument: async (id: string) => {
     const token = getAccessToken();
     const response = await fetch(`${API_URL}/documents/${id}/download`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
