@@ -10,7 +10,12 @@ import type { TaskStatus } from '../types';
 const taskStatuses: TaskStatus[] = ['OPEN', 'IN_PROGRESS', 'DONE'];
 const taskColors: Record<TaskStatus, string> = { OPEN: '#82918a', IN_PROGRESS: '#d89a43', DONE: '#39a66d' };
 
+/**
+ * Завантажує проєкти й завдання та обчислює показники портфеля для трьох діаграм.
+ * Компонент не приймає аргументів; окрім читання API, постійних побічних ефектів не має.
+ */
 export function AnalyticsPage() {
+  // Незалежні набори даних запитуються паралельно та повертаються як один знімок для useApiData.
   const loader = useCallback(async () => { const [projects, tasks] = await Promise.all([api.getProjects(), api.getTasks()]); return { projects, tasks }; }, []);
   const { data, loading, error, retry } = useApiData(loader, [loader]);
   if (loading) return <LoadingState label="Analysedaten werden geladen …" />;
@@ -18,6 +23,7 @@ export function AnalyticsPage() {
   if (!data) return <EmptyState message="Keine Analysedaten verfügbar." />;
 
   const { projects, tasks } = data;
+  // Верхні картки агрегують потужність, завершеність проєктів і незакриті завдання.
   const totalPower = projects.reduce((sum, project) => sum + project.pvPower, 0);
   const active = projects.filter((project) => project.status !== 'COMPLETED').length;
   const completed = projects.length - active;
@@ -28,7 +34,9 @@ export function AnalyticsPage() {
     { label: 'Offene Aufgaben', value: openTasks, detail: `${tasks.filter((task) => task.status === 'IN_PROGRESS').length} davon in Arbeit`, icon: ListChecks, tone: 'amber' },
     { label: 'Gesamtleistung', value: `${totalPower} kWp`, detail: 'Installierte und geplante PV', icon: SunMedium, tone: 'blue' },
   ];
+  // Розподіл зберігає порядок workflowStages і не показує порожні етапи.
   const projectDistribution = workflowStages.map((stage) => ({ ...stage, count: projects.filter((project) => project.status === stage.status).length })).filter((item) => item.count > 0);
+  // Проєкти групуються за календарним місяцем; потужність у графіку накопичується хронологічно.
   const monthMap = new Map<string, { date: Date; count: number; power: number }>();
   projects.forEach((project) => { const created = new Date(project.createdAt); const key = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`; const current = monthMap.get(key) ?? { date: new Date(created.getFullYear(), created.getMonth(), 1), count: 0, power: 0 }; current.count += 1; current.power += project.pvPower; monthMap.set(key, current); });
   let cumulativePower = 0;
