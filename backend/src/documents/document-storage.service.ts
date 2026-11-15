@@ -39,6 +39,11 @@ export class DocumentStorageService {
     await writeFile(filePath, data);
   }
 
+  /**
+   * Читає байти за ключем з активного драйвера.
+   * @returns Buffer незалежно від Netlify або локальної реалізації.
+   * @throws NotFoundException для відсутнього об’єкта та помилок читання, не розкриваючи внутрішній шлях.
+   */
   async get(key: string) {
     try {
       if (this.useBlobs) {
@@ -54,6 +59,10 @@ export class DocumentStorageService {
     }
   }
 
+  /**
+   * Видаляє об’єкт з активного драйвера.
+   * Локальна відсутність файла (ENOENT) вважається ідемпотентним успіхом; інші помилки передаються викликачеві.
+   */
   async remove(key: string) {
     if (this.useBlobs) {
       const store = getStore('meterflow-documents');
