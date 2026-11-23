@@ -1,6 +1,8 @@
 import { ArrowDown, Bot, FileUp, ShieldCheck } from 'lucide-react';
 import { siDocker, siGithub, siGithubactions, siJest, siNestjs, siNetlify, siPostgresql, siPrisma, siReact, siTypescript, type SimpleIcon } from 'simple-icons';
 
+// Єдиний каталог карток: порядок масиву визначає порядок технологій у сітці,
+// а null замість SimpleIcon вмикає локальну піктограму AI Assistants.
 const technologies = [
   { title: 'React', category: 'Frontend', icon: siReact, text: 'Komponentenbasierte Oberfläche mit responsiven Seiten, Formularen und geschützten Routen.' },
   { title: 'TypeScript', category: 'Sprache', icon: siTypescript, text: 'Durchgängige Typisierung zwischen UI, API-Services, DTOs und Geschäftslogik.' },
@@ -15,8 +17,16 @@ const technologies = [
   { title: 'AI Assistants', category: 'Entwicklung', icon: null, text: 'Unterstützung bei Implementierung und Review; integrierter Code wird verstanden und getestet.' },
 ];
 
+/**
+ * Перетворює метадані Simple Icons на доступну inline-SVG.
+ * За відсутності іконки повертає Bot із власною aria-label; стану й побічних ефектів немає.
+ */
 function BrandIcon({ icon }: { icon: SimpleIcon | null }) { return icon ? <svg role="img" aria-label={`${icon.title} Logo`} viewBox="0 0 24 24" fill="currentColor"><path d={icon.path} /></svg> : <Bot aria-label="AI Assistants" />; }
 
+/**
+ * Показує статичний огляд стеку й два архітектурні потоки MeterFlow.
+ * Компонент не приймає аргументів, не завантажує дані та лише відображає локальний каталог.
+ */
 export function TechStackPage() {
   return <div className="page-stack"><section className="about-hero"><div><p className="eyebrow">Über dieses Projekt</p><h2>Fullstack Engineering für die Energiewende</h2><p>MeterFlow ist ein unabhängiges Demo- und Portfolio-Projekt, inspiriert von realen Mieterstrom-Workflows. Es demonstriert eine vollständige TypeScript-Anwendung für Projektabläufe von der Anfrage bis zur Abrechnung – ohne Verbindung zu einem offiziellen Anbieter oder dessen Markenauftritt.</p><div className="about-tags"><span>Independent Demo</span><span>End-to-End TypeScript</span><span>EnergyTech SaaS</span></div></div><div className="architecture-mark"><span>React + Vite</span><i>→</i><span>Netlify Function</span><i>→</i><span>NestJS + Prisma</span><i>→</i><span>PostgreSQL</span></div></section>
     <section><div className="section-heading"><div><p className="eyebrow">Technologie</p><h3>Der Stack hinter MeterFlow</h3></div><p>Bewährte Werkzeuge, klar getrennte Verantwortlichkeiten und eine Architektur, die für Junior-Entwickler nachvollziehbar bleibt.</p></div><div className="tech-grid">{technologies.map(({ title, category, icon, text }) => <article className="tech-card" key={title}><span><BrandIcon icon={icon} /></span><small>{category}</small><h4>{title}</h4><p>{text}</p></article>)}</div></section>
